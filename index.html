@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Freedman's Digital Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" integrity="sha512-B20AKHubiHiNndD4b0xscqvHYA1MYMyNImKklUac9jsecwNzcIm9LGuW5L4t+wx/KtrMYoTCUAcJGbcebUOqYA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
@@ -14,7 +16,9 @@
             color: #e5e5e5;
             font-family: 'Inter', sans-serif;
         }
-
+        body.modal-open {
+            overflow: hidden;
+        }
         /* Animated Ocean Background */
         body::before {
             content: '';
@@ -24,15 +28,10 @@
             width: 200%;
             height: 200%;
             z-index: -1;
-            background-color: #020617; /* Deep, dark blue */
-            
-            /* Static noise texture using an SVG filter */
+            background-color: #020617;
             background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.1"/></svg>');
-            
-            /* Animation for subtle, slow movement */
             animation: noiseAnimation 30s linear infinite;
         }
-
         @keyframes noiseAnimation {
             0% { transform: translate(0, 0); }
             25% { transform: translate(-10%, 10%); }
@@ -40,7 +39,6 @@
             75% { transform: translate(-5%, 5%); }
             100% { transform: translate(0, 0); }
         }
-
         .book-cover {
             width: 160px;
             height: 240px;
@@ -54,40 +52,26 @@
             transform: translateY(-8px) scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
         }
-        .book-info {
-            text-align: center;
-        }
-        
-        /* New On-Hover Scrollbar Styles */
+        .book-info { text-align: center; }
         .horizontal-scroll {
-            /* For Firefox */
             scrollbar-width: thin;
-            scrollbar-color: transparent transparent; /* Hidden by default */
+            scrollbar-color: transparent transparent;
             transition: scrollbar-color 0.3s ease-out;
         }
-        .horizontal-scroll:hover {
-            scrollbar-color: #444 #1a1a1a; /* Visible on hover */
-        }
-        /* For Chrome, Safari, etc. */
-        .horizontal-scroll::-webkit-scrollbar {
-            height: 8px;
-        }
-        .horizontal-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
+        .horizontal-scroll:hover { scrollbar-color: #444 #1a1a1a; }
+        .horizontal-scroll::-webkit-scrollbar { height: 8px; }
+        .horizontal-scroll::-webkit-scrollbar-track { background: transparent; }
         .horizontal-scroll::-webkit-scrollbar-thumb {
-            background-color: transparent; /* Hidden by default */
+            background-color: transparent;
             border-radius: 4px;
-            border: 2px solid transparent;
-            background-clip: content-box;
             transition: background-color 0.3s ease-out;
         }
-        .horizontal-scroll:hover::-webkit-scrollbar-thumb {
-            background-color: #444; /* Visible on hover */
-        }
-
-        #pdf-modal.hidden {
-            display: none;
+        .horizontal-scroll:hover::-webkit-scrollbar-thumb { background-color: #444; }
+        #pdf-modal.hidden { display: none; }
+        #pdf-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -96,14 +80,14 @@
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <header class="text-center mb-12">
             <h1 class="text-4xl md:text-5xl font-extrabold mb-4 uppercase tracking-wider" style="font-family: 'Syne', sans-serif;">The Freedman's Digital Library</h1>
-            <p class="max-w-3xl mx-auto text-lg text-gray-300 italic lg:text-left">"The race will free itself from exploiters just as soon as it decides to do so. No one else can accomplish this task for the race. It must plan and do for itself."</p>
-             <p class="text-sm text-gray-600 mt-2 lg:text-left max-w-3xl mx-auto">- Carter G. Woodson, <cite>Miseducation of the Negro</cite></p>
-            <p class="max-w-3xl mx-auto text-lg text-gray-400 mt-4 lg:text-left">At a time where our distinct African-American history is actively being erased or worse, deracinated, it's imperative that it be preserved. This collection of public domain and otherwise obscure digital items is the collective effort of a young ethnicity founded in the West.</p>
+            <div class="max-w-3xl mx-auto text-lg lg:text-left">
+                <p class="text-gray-300 italic">"The race will free itself from exploiters just as soon as it decides to do so. No one else can accomplish this task for the race. It must plan and do for itself."</p>
+                <p class="text-sm text-gray-600 mt-2">- Carter G. Woodson, <cite>Miseducation of the Negro</cite></p>
+                <p class="text-gray-400 mt-4">At a time where our distinct African-American history is actively being erased or worse, deracinated, it's imperative that it be preserved. This collection of public domain and otherwise obscure digital items is the collective effort of a young ethnicity founded in the West.</p>
+            </div>
         </header>
 
-        <main id="library-content">
-            <!-- Book categories and titles will be dynamically inserted here -->
-        </main>
+        <main id="library-content"></main>
 
         <footer class="text-center mt-12 py-6">
             <p class="text-gray-500">MADE BY <a href="https://www.harad.tech" target="_blank" rel="noopener noreferrer" class="hover:text-[#CDFF00] transition-colors">HARAD</a> | 2025</p>
@@ -112,27 +96,36 @@
 
     <!-- PDF Modal -->
     <div id="pdf-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div class="flex items-center justify-between p-4 border-b border-gray-700">
-                <h3 id="modal-title" class="text-lg font-bold text-white"></h3>
+        <div class="bg-[#1e1e1e] rounded-lg shadow-xl w-full h-full max-w-4xl max-h-[95vh] flex flex-col">
+            <div class="flex items-center justify-between p-3 border-b border-gray-700">
+                <h3 id="modal-title" class="text-lg font-bold text-white truncate pr-4"></h3>
                 <div class="flex items-center space-x-4">
                      <a id="modal-download-link" href="#" download class="bg-[#CDFF00] text-black font-bold uppercase text-xs py-2 px-4 rounded-md hover:bg-opacity-80 transition-colors">Download</a>
                     <button id="modal-close-btn" class="text-gray-400 hover:text-white transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
             </div>
-            <div class="flex-grow p-4">
-                <iframe id="pdf-viewer" class="w-full h-full" frameborder="0"></iframe>
+            <div id="pdf-render-container" class="flex-grow p-4 flex items-center justify-center overflow-auto">
+                 <div id="pdf-loader" class="text-white text-center">
+                    <p>Loading Document...</p>
+                    <p class="text-sm text-gray-400 mt-2">This may take a moment.</p>
+                 </div>
+                 <canvas id="pdf-canvas" class="hidden"></canvas>
+            </div>
+            <div id="pagination-controls" class="flex items-center justify-center p-2 border-t border-gray-700 space-x-4">
+                <button id="prev-page" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">&lt; Prev</button>
+                <span id="page-num-display" class="text-sm"></span>
+                <button id="next-page" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">Next &gt;</button>
             </div>
         </div>
     </div>
-
 
     <script>
         // --- CONFIGURATION ---
         const R2_CUSTOM_DOMAIN_URL = "https://library.harad.tech";
         const PDF_SUBFOLDER = "Library";
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.js.worker.min.js`;
 
         // --- DATA ---
         const libraryData = [
@@ -214,141 +207,144 @@
                 h1 = Math.imul(h1 ^ ch, 2654435761);
                 h2 = Math.imul(h2 ^ ch, 1597334677);
             }
-            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
-            h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
-            h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
             return 4294967296 * (2097151 & h2) + (h1 >>> 0);
         };
-
         const colorPalettes = [
-            { start: '#CDFF00', end: '#000000', fg: '#000000' },
-            { start: '#FF4F00', end: '#F0F0F0', fg: '#000000' },
-            { start: '#0000FF', end: '#FFFF00', fg: '#000000' },
-            { start: '#FF00FF', end: '#FFFFFF', fg: '#000000' },
-            { start: '#000000', end: '#FFFFFF', fg: '#FFFFFF' },
-            { start: '#FAFF00', end: '#FF00C7', fg: '#000000' },
+            { start: '#CDFF00', end: '#000000', fg: '#000000' }, { start: '#FF4F00', end: '#F0F0F0', fg: '#000000' },
+            { start: '#0000FF', end: '#FFFF00', fg: '#000000' }, { start: '#FF00FF', end: '#FFFFFF', fg: '#000000' },
+            { start: '#000000', end: '#FFFFFF', fg: '#FFFFFF' }, { start: '#FAFF00', end: '#FF00C7', fg: '#000000' },
         ];
-
         const layouts = ['center'];
-
         function createGenerativeCover(title, author) {
             const hash = cyrb53(title + author);
             const palette = colorPalettes[hash % colorPalettes.length];
-            const layout = layouts[hash % layouts.length];
-            
-            let titleProps, authorProps;
-            const titleYPositions = [45, 50, 55];
-
-            const maxLineLength = 20;
-            const words = title.split(' ');
-            let lines = [];
-            let currentLine = words[0];
-
+            const maxLineLength = 20, words = title.split(' ');
+            let lines = [], currentLine = words[0];
             for (let i = 1; i < words.length; i++) {
-                if (currentLine.length + words[i].length + 1 < maxLineLength) {
-                    currentLine += " " + words[i];
-                } else {
-                    lines.push(currentLine);
-                    currentLine = words[i];
-                }
+                if (currentLine.length + words[i].length + 1 < maxLineLength) { currentLine += " " + words[i]; } 
+                else { lines.push(currentLine); currentLine = words[i]; }
             }
             lines.push(currentLine);
-            
-            const perLineSpacing = 6;
-            const authorOffset = (lines.length > 1) ? (lines.length - 1) * perLineSpacing : 0;
-
-            const titleBaseY = titleYPositions[hash % titleYPositions.length];
-            titleProps = `x="50%" y="${titleBaseY}%" text-anchor="middle"`;
-            authorProps = `x="50%" y="${titleBaseY + 12 + authorOffset}%" text-anchor="middle"`;
-
-            const titleTspans = lines.map((line, index) => `<tspan x="50%" dy="${index === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('');
-            const gradientId = `grad-${hash}`;
-            const noiseId = `noise-${hash}`;
-
-            const svg = `
-                <svg width="200" height="300" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:${palette.start};" />
-                            <stop offset="100%" style="stop-color:${palette.end};" />
-                        </linearGradient>
-                        <filter id="${noiseId}">
-                            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
-                            <feComponentTransfer>
-                                <feFuncA type="linear" slope="0.18"/>
-                            </feComponentTransfer>
-                        </filter>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#${gradientId})" />
-                    <rect width="100%" height="100%" filter="url(#${noiseId})" opacity="0.7" />
-                    <text ${titleProps} font-family="Inter, sans-serif" font-size="18" fill="${palette.fg}" font-weight="bold">${titleTspans}</text>
-                    <text ${authorProps} font-family="Inter, sans-serif" font-size="12" fill="${palette.fg}" opacity="0.8">${author}</text>
-                </svg>
-            `;
+            const authorOffset = (lines.length > 1) ? (lines.length - 1) * 6 : 0;
+            const titleBaseY = [45, 50, 55][hash % 3];
+            const titleProps = `x="50%" y="${titleBaseY}%" text-anchor="middle"`;
+            const authorProps = `x="50%" y="${titleBaseY + 12 + authorOffset}%" text-anchor="middle"`;
+            const titleTspans = lines.map((line, i) => `<tspan x="50%" dy="${i === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('');
+            const gradientId = `grad-${hash}`, noiseId = `noise-${hash}`;
+            const svg = `<svg width="200" height="300" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:${palette.start};" /><stop offset="100%" style="stop-color:${palette.end};" /></linearGradient><filter id="${noiseId}"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer></filter></defs><rect width="100%" height="100%" fill="url(#${gradientId})" /><rect width="100%" height="100%" filter="url(#${noiseId})" opacity="0.7" /><text ${titleProps} font-family="Inter, sans-serif" font-size="18" fill="${palette.fg}" font-weight="bold">${titleTspans}</text><text ${authorProps} font-family="Inter, sans-serif" font-size="12" fill="${palette.fg}" opacity="0.8">${author}</text></svg>`;
             return `data:image/svg+xml;base64,${btoa(svg)}`;
         }
 
         // --- DOM RENDER FUNCTION ---
         function renderLibrary() {
             const libraryContent = document.getElementById('library-content');
-            let fullHtml = ''; // Build the full HTML string first
+            let fullHtml = '';
             libraryData.forEach(category => {
                 const booksHtml = category.books.map(book => {
                     const subfolderPath = PDF_SUBFOLDER ? `${PDF_SUBFOLDER}/` : '';
                     const pdfUrl = `${R2_CUSTOM_DOMAIN_URL}/${subfolderPath}${encodeURIComponent(book.filename)}`;
                     const coverSrc = book.cover ? book.cover : createGenerativeCover(book.title, book.author);
-
-                    return `
-                        <div class="book-card w-40 flex-shrink-0" 
-                             data-pdf-url="${pdfUrl}" 
-                             data-title="${book.title}" 
-                             data-author="${book.author}">
-                            <img src="${coverSrc}" alt="Cover for ${book.title}" class="book-cover">
-                            <div class="book-info mt-3">
-                                <h3 class="font-bold text-sm leading-tight">${book.title}</h3>
-                                <p class="text-xs text-gray-500 mt-1">${book.author}</p>
-                            </div>
-                        </div>
-                    `;
+                    return `<div class="book-card w-40 flex-shrink-0" data-pdf-url="${pdfUrl}" data-title="${book.title}"><img src="${coverSrc}" alt="Cover for ${book.title}" class="book-cover"><div class="book-info mt-3"><h3 class="font-bold text-sm leading-tight">${book.title}</h3><p class="text-xs text-gray-500 mt-1">${book.author}</p></div></div>`;
                 }).join('');
-
-                const categoryHtml = `
-                    <section class="mb-8">
-                        <h2 class="text-3xl font-bold text-center mb-6 text-white">${category.category}</h2>
-                        <div class="flex overflow-x-auto space-x-6 py-4 horizontal-scroll">
-                            ${booksHtml}
-                        </div>
-                    </section>
-                `;
-                fullHtml += categoryHtml; // Append to the main string
+                fullHtml += `<section class="mb-8"><h2 class="text-3xl font-bold text-center mb-6 text-white">${category.category}</h2><div class="flex overflow-x-auto space-x-6 py-4 horizontal-scroll">${booksHtml}</div></section>`;
             });
-            libraryContent.innerHTML = fullHtml; // Set innerHTML only once, which is more efficient
+            libraryContent.innerHTML = fullHtml;
         }
         
-        // --- MODAL LOGIC ---
+        // --- PDF.js MODAL LOGIC ---
         const modal = document.getElementById('pdf-modal');
         const modalTitle = document.getElementById('modal-title');
-        const pdfViewer = document.getElementById('pdf-viewer');
         const downloadLink = document.getElementById('modal-download-link');
         const closeModalBtn = document.getElementById('modal-close-btn');
+        const pdfLoader = document.getElementById('pdf-loader');
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const pageNumDisplay = document.getElementById('page-num-display');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
 
-        function openModal(pdfUrl, title) {
+        let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null;
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(() => {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+            pageNumDisplay.textContent = `Page ${num} of ${pdfDoc.numPages}`;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function updatePaginationControls() {
+            prevPageBtn.disabled = pageNum <= 1;
+            nextPageBtn.disabled = pageNum >= pdfDoc.numPages;
+        }
+
+        prevPageBtn.addEventListener('click', () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+            updatePaginationControls();
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+            updatePaginationControls();
+        });
+
+        async function openModal(pdfUrl, title) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
             modalTitle.textContent = title;
             downloadLink.href = pdfUrl;
-            pdfViewer.src = pdfUrl;
-
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            pdfLoader.classList.remove('hidden');
+            canvas.classList.add('hidden');
+            
+            try {
+                const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                pdfDoc = await loadingTask.promise;
+                pageNum = 1;
+                pdfLoader.classList.add('hidden');
+                canvas.classList.remove('hidden');
+                renderPage(pageNum);
+                updatePaginationControls();
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfLoader.textContent = 'Failed to load PDF. Please try downloading.';
+            }
         }
 
         function closeModal() {
             modal.classList.add('hidden');
-            pdfViewer.src = 'about:blank'; // Clear iframe to stop loading
-            document.body.style.overflow = ''; // Restore scrolling
+            document.body.classList.remove('modal-open');
+            if (pdfDoc) {
+                pdfDoc.destroy();
+                pdfDoc = null;
+            }
         }
 
-        document.getElementById('library-content').addEventListener('click', (e) => {
+        document.getElementById('library-content').addEventListener('click', e => {
             const bookCard = e.target.closest('.book-card');
             if (bookCard) {
                 const { pdfUrl, title } = bookCard.dataset;
@@ -357,20 +353,12 @@
         });
 
         closeModalBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            renderLibrary();
-        });
+        document.addEventListener('DOMContentLoaded', renderLibrary);
 
     </script>
 </body>
 </html>
-
-
 
