@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Freedman's Digital Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e5e5e5;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Animated Ocean Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            z-index: -1;
+            background-color: #020617; /* Deep, dark blue */
+            
+            /* Static noise texture using an SVG filter */
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.1"/></svg>');
+            
+            /* Animation for subtle, slow movement */
+            animation: noiseAnimation 30s linear infinite;
+        }
+
+        @keyframes noiseAnimation {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-10%, 10%); }
+            50% { transform: translate(10%, -10%); }
+            75% { transform: translate(-5%, 5%); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .book-cover {
+            width: 160px;
+            height: 240px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        .book-cover:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+        }
+        .book-info {
+            text-align: center;
+        }
+        
+        /* New On-Hover Scrollbar Styles */
+        .horizontal-scroll {
+            /* For Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent; /* Hidden by default */
+            transition: scrollbar-color 0.3s ease-out;
+        }
+        .horizontal-scroll:hover {
+            scrollbar-color: #444 #1a1a1a; /* Visible on hover */
+        }
+        /* For Chrome, Safari, etc. */
+        .horizontal-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .horizontal-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .horizontal-scroll::-webkit-scrollbar-thumb {
+            background-color: transparent; /* Hidden by default */
+            border-radius: 4px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+            transition: background-color 0.3s ease-out;
+        }
+        .horizontal-scroll:hover::-webkit-scrollbar-thumb {
+            background-color: #444; /* Visible on hover */
+        }
+
+        #pdf-modal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header class="text-center mb-16">
+            <h1 class="text-5xl font-extrabold mb-4 uppercase tracking-wider" style="font-family: 'Syne', sans-serif;">The Freedman's Digital Library</h1>
+            <p class="max-w-3xl mx-auto text-lg text-gray-400">"The race will free itself from exploiters just as soon as it decides to do so. No one else can accomplish this task for the race. It must plan and do for itself."</p>
+             <p class="text-md text-gray-500 mt-2">- Carter G. Woodson, <cite>Miseducation of the Negro</cite></p>
+            <p class="max-w-3xl mx-auto text-lg text-gray-400 mt-4">At a time where our distinct African-American history is actively being erased or worse, deracinated, it's imperative that it be preserved. This collection of public domain and otherwise obscure digital items is the collective effort of a young ethnicity founded in the West.</p>
+        </header>
+
+        <main id="library-content">
+            <!-- Book categories and titles will be dynamically inserted here -->
+        </main>
+
+        <footer class="text-center mt-20 py-6 border-t border-gray-800">
+            <p class="text-gray-500">MADE BY <a href="https://www.harad.tech" target="_blank" rel="noopener noreferrer" class="hover:text-[#CDFF00] transition-colors">HARAD</a> | 2025</p>
+        </footer>
+    </div>
+
+    <!-- PDF Modal -->
+    <div id="pdf-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-[#1a1a1a] rounded-lg shadow-xl w-full h-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                <h3 id="modal-title" class="text-lg font-bold text-white"></h3>
+                <div class="flex items-center space-x-4">
+                     <a id="modal-download-link" href="#" download class="text-sm text-blue-400 hover:text-blue-300 transition-colors">Download PDF</a>
+                    <button id="modal-close-btn" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-grow p-4">
+                <iframe id="pdf-viewer" class="w-full h-full" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- CONFIGURATION ---
+        const R2_CUSTOM_DOMAIN_URL = "https://library.harad.tech";
+        const PDF_SUBFOLDER = "Library";
+
+        // --- DATA ---
+        const libraryData = [
+            {
+                category: "Adventure & War",
+                books: [
+                    { title: "A Negro Explorer at the North Pole", author: "Matthew Alexander Henson", filename: "A Negro Explorer at the North Pole by Matthew Alexander Henson.pdf" },
+                    { title: "Narrative of a Journey to Musardu", author: "Benjamin Anderson", filename: "Narrative of a Journey to Musardu, the Capital of the Western Mandingoes by Benjamin Anderson.pdf"},
+                    { title: "The Black Phalanx", author: "Joseph T. Wilson", filename: "The Black Phalanx by Joseph T. Wilson.pdf" },
+                    { title: "The Life and Adventures of Nat Love", author: "Nat Love", filename: "The Life and Adventures of Nat Love by Nat Love.pdf" },
+                    { title: "The Negro as a soldier", author: "Christian A. Fleetwood", filename: "The Negro as a soldier by Christian A. Fleetwood.pdf" },
+                ],
+            },
+            {
+                category: "Arts & Crafts",
+                books: [
+                    { title: "Domestic Cook Book", author: "Malinda Russell", filename: "Domestic Cook Book by Malinda Russell.pdf" },
+                    { title: "Fire!!", author: "Various", filename: "Fire!.pdf" },
+                    { title: "The Negro in Literature and Art", author: "Benjamin Griffith Brawley", filename: "The Negro in Literature and Art in the United States by Benjamin Griffith Brawley.pdf" },
+                    { title: "The New Negro An Interpretation", author: "Alain Locke (Editor)", filename: "The New Negro An Interpretation edited by Alain Locke.pdf" },
+                ],
+            },
+            {
+                category: "Before Liberation",
+                books: [
+                    { title: "Narrative of Henry Bibb", author: "Henry Bibb", filename: "Narrative of the Life and Adventures of Henry Bibb, an American Slave, Written by Himself.pdf" },
+                    { title: "Narrative of Frederick Douglass", author: "Frederick Douglass", filename: "Narrative of the Life of Frederick Douglass, an American Slave.pdf" },
+                    { title: "Reminiscences of My Life in Camp", author: "Susie King Taylor", filename: "Reminiscences of My Life in Camp by Susie King Taylor.pdf" },
+                    { title: "Twelve Years a Slave", author: "Solomon Northup", filename: "Twelve Years a Slave by Solomon Northup.pdf" },
+                    { title: "Up from Slavery", author: "Booker T. Washington", filename: "Up from Slavery by Booker T. Washington.pdf" },
+                ],
+            },
+            {
+                category: "Fiction",
+                books: [
+                    { title: "Our Nig", author: "Harriet E. Wilson", filename: "Our Nig; or, Sketches from the Life of a Free Black by Harriet E. Wilson.pdf" },
+                    { title: "The Conjure Woman", author: "Charles W. Chesnutt", filename: "The Conjure Woman by Charles W. Chesnutt.pdf" },
+                    { title: "The Eatonville Anthology", author: "Zora Neale Hurston", filename: "The Eatonville Anthology by Zora Neale Hurston.pdf" },
+                    { title: "The Homesteader", author: "Oscar Micheaux", filename: "The Homesteader by Oscar Micheaux.pdf" },
+                    { title: "There is confusion", author: "Jessie Redmon Fauset", filename: "There is confusion by Jessie Redmon Fauset.pdf" },
+                ],
+            },
+            {
+                category: "Folklore & Culture",
+                books: [
+                    { title: "Cudjo's Own Story", author: "Zora Neale Hurston", filename: "Cudjo's Own Story of the Last African Slaver by Zora Neale Hurston.pdf" },
+                    { title: "Folk song of the American Negro", author: "John Wesley Work", filename: "Folk song of the American Negro by John Wesley Work.pdf" },
+                    { title: "Negro Folk Rhymes", author: "Thomas Washington Talley", filename: "Negro Folk Rhymes by Thomas Washington Talley.pdf" },
+                    { title: "The book of American Negro spirituals", author: "James Weldon Johnson", filename: "The book of American Negro spirituals by James Weldon Johnson.pdf" },
+                    { title: "The History of the Negro Church", author: "Carter G. Woodson", filename: "The History of the Negro Church by Carter G. Woodson.pdf" },
+                ],
+            },
+             {
+                category: "Nationalism",
+                books: [
+                    { title: "A Soldier's Story", author: "Kuwasi Balgoon", filename: "A Soldier's Story by Kuwasi Balgoon.pdf" },
+                    { title: "Negroes with Guns", author: "Robert F. Williams", filename: "Negroes with Guns by Robert F. Williams.pdf" },
+                    { title: "The Conservation of Races", author: "W. E. B. Du Bois", filename: "The Conservation of Races by W. E. B. Du Bois.pdf" },
+                    { title: "The Education of the Negro Prior to 1861", author: "Carter Godwin Woodson", filename: "The Education of the Negro Prior to 1861 by Carter Godwin Woodson.pdf" },
+                    { title: "The Negro in the American rebellion", author: "William Wells Brown", filename: "The Negro in the American rebellion by William Wells Brown.pdf" },
+                ],
+            },
+            {
+                category: "Poetry",
+                books: [
+                    { title: "Poems on various subjects", author: "Phillis Wheatley", filename: "Poems on various subjects, religious and moral by Phillis Wheatley.pdf" },
+                    { title: "The Book of American Negro Poetry", author: "James Weldon Johnson", filename: "The Book of American Negro Poetry by James Weldon Johnson.pdf" },
+                    { title: "The Complete Poems", author: "Paul Laurence Dunbar", filename: "The Complete Poems of Paul Laurence Dunbar.pdf" },
+                    { title: "The weary blues", author: "Langston Hughes", filename: "The weary blues by Langston Hughes.pdf" },
+                ],
+            }
+        ];
+
+        // --- GENERATIVE ART SYSTEM ---
+        const cyrb53 = (str, seed = 0) => {
+            let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+            for (let i = 0, ch; i < str.length; i++) {
+                ch = str.charCodeAt(i);
+                h1 = Math.imul(h1 ^ ch, 2654435761);
+                h2 = Math.imul(h2 ^ ch, 1597334677);
+            }
+            h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+            h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+            h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+            h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+            return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+        };
+
+        const colorPalettes = [
+            { start: '#CDFF00', end: '#000000', fg: '#000000' },
+            { start: '#FF4F00', end: '#F0F0F0', fg: '#000000' },
+            { start: '#0000FF', end: '#FFFF00', fg: '#000000' },
+            { start: '#FF00FF', end: '#FFFFFF', fg: '#000000' },
+            { start: '#000000', end: '#FFFFFF', fg: '#FFFFFF' },
+            { start: '#FAFF00', end: '#FF00C7', fg: '#000000' },
+        ];
+
+        const layouts = ['center'];
+
+        function createGenerativeCover(title, author) {
+            const hash = cyrb53(title + author);
+            const palette = colorPalettes[hash % colorPalettes.length];
+            const layout = layouts[hash % layouts.length];
+            
+            let titleProps, authorProps;
+            const titleYPositions = [45, 50, 55];
+
+            const maxLineLength = 20;
+            const words = title.split(' ');
+            let lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                if (currentLine.length + words[i].length + 1 < maxLineLength) {
+                    currentLine += " " + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            
+            const perLineSpacing = 6;
+            const authorOffset = (lines.length > 1) ? (lines.length - 1) * perLineSpacing : 0;
+
+            const titleBaseY = titleYPositions[hash % titleYPositions.length];
+            titleProps = `x="50%" y="${titleBaseY}%" text-anchor="middle"`;
+            authorProps = `x="50%" y="${titleBaseY + 12 + authorOffset}%" text-anchor="middle"`;
+
+            const titleTspans = lines.map((line, index) => `<tspan x="50%" dy="${index === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('');
+            const gradientId = `grad-${hash}`;
+            const noiseId = `noise-${hash}`;
+
+            const svg = `
+                <svg width="200" height="300" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${palette.start};" />
+                            <stop offset="100%" style="stop-color:${palette.end};" />
+                        </linearGradient>
+                        <filter id="${noiseId}">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
+                            <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.18"/>
+                            </feComponentTransfer>
+                        </filter>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#${gradientId})" />
+                    <rect width="100%" height="100%" filter="url(#${noiseId})" opacity="0.7" />
+                    <text ${titleProps} font-family="Inter, sans-serif" font-size="18" fill="${palette.fg}" font-weight="bold">${titleTspans}</text>
+                    <text ${authorProps} font-family="Inter, sans-serif" font-size="12" fill="${palette.fg}" opacity="0.8">${author}</text>
+                </svg>
+            `;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+
+        // --- DOM RENDER FUNCTION ---
+        function renderLibrary() {
+            const libraryContent = document.getElementById('library-content');
+            let fullHtml = ''; // Build the full HTML string first
+            libraryData.forEach(category => {
+                const booksHtml = category.books.map(book => {
+                    const subfolderPath = PDF_SUBFOLDER ? `${PDF_SUBFOLDER}/` : '';
+                    const pdfUrl = `${R2_CUSTOM_DOMAIN_URL}/${subfolderPath}${encodeURIComponent(book.filename)}`;
+                    const coverSrc = book.cover ? book.cover : createGenerativeCover(book.title, book.author);
+
+                    return `
+                        <div class="book-card w-40 flex-shrink-0" 
+                             data-pdf-url="${pdfUrl}" 
+                             data-title="${book.title}" 
+                             data-author="${book.author}">
+                            <img src="${coverSrc}" alt="Cover for ${book.title}" class="book-cover">
+                            <div class="book-info mt-3">
+                                <h3 class="font-bold text-sm leading-tight">${book.title}</h3>
+                                <p class="text-xs text-gray-500 mt-1">${book.author}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const categoryHtml = `
+                    <section class="mb-12">
+                        <h2 class="text-3xl font-bold text-left mb-6 text-white">${category.category}</h2>
+                        <div class="flex overflow-x-auto space-x-6 py-4 horizontal-scroll">
+                            ${booksHtml}
+                        </div>
+                    </section>
+                `;
+                fullHtml += categoryHtml; // Append to the main string
+            });
+            libraryContent.innerHTML = fullHtml; // Set innerHTML only once, which is more efficient
+        }
+        
+        // --- MODAL LOGIC ---
+        const modal = document.getElementById('pdf-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const downloadLink = document.getElementById('modal-download-link');
+        const closeModalBtn = document.getElementById('modal-close-btn');
+
+        function openModal(pdfUrl, title) {
+            modalTitle.textContent = title;
+            pdfViewer.src = pdfUrl;
+            downloadLink.href = pdfUrl;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            pdfViewer.src = 'about:blank'; // Clear iframe to stop loading
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        document.getElementById('library-content').addEventListener('click', (e) => {
+            const bookCard = e.target.closest('.book-card');
+            if (bookCard) {
+                const { pdfUrl, title } = bookCard.dataset;
+                openModal(pdfUrl, title);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLibrary();
+        });
+
+    </script>
+</body>
+</html>
+
