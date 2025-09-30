@@ -94,18 +94,18 @@
 <body class="antialiased">
     
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <header class="text-center mb-16">
+        <header class="text-center mb-12">
             <h1 class="text-5xl font-extrabold mb-4 uppercase tracking-wider" style="font-family: 'Syne', sans-serif;">The Freedman's Digital Library</h1>
-            <p class="max-w-3xl mx-auto text-lg text-gray-400">"The race will free itself from exploiters just as soon as it decides to do so. No one else can accomplish this task for the race. It must plan and do for itself."</p>
-             <p class="text-md text-gray-500 mt-2">- Carter G. Woodson, <cite>Miseducation of the Negro</cite></p>
-            <p class="max-w-3xl mx-auto text-lg text-gray-400 mt-4">At a time where our distinct African-American history is actively being erased or worse, deracinated, it's imperative that it be preserved. This collection of public domain and otherwise obscure digital items is the collective effort of a young ethnicity founded in the West.</p>
+            <p class="max-w-3xl mx-auto text-lg text-gray-300 italic lg:text-left">"The race will free itself from exploiters just as soon as it decides to do so. No one else can accomplish this task for the race. It must plan and do for itself."</p>
+             <p class="text-sm text-gray-600 mt-2 lg:text-left max-w-3xl mx-auto">- Carter G. Woodson, <cite>Miseducation of the Negro</cite></p>
+            <p class="max-w-3xl mx-auto text-lg text-gray-400 mt-4 lg:text-left">At a time where our distinct African-American history is actively being erased or worse, deracinated, it's imperative that it be preserved. This collection of public domain and otherwise obscure digital items is the collective effort of a young ethnicity founded in the West.</p>
         </header>
 
         <main id="library-content">
             <!-- Book categories and titles will be dynamically inserted here -->
         </main>
 
-        <footer class="text-center mt-20 py-6 border-t border-gray-800">
+        <footer class="text-center mt-12 py-6">
             <p class="text-gray-500">MADE BY <a href="https://www.harad.tech" target="_blank" rel="noopener noreferrer" class="hover:text-[#CDFF00] transition-colors">HARAD</a> | 2025</p>
         </footer>
     </div>
@@ -314,8 +314,8 @@
                 }).join('');
 
                 const categoryHtml = `
-                    <section class="mb-12">
-                        <h2 class="text-3xl font-bold text-left mb-6 text-white">${category.category}</h2>
+                    <section class="mb-8">
+                        <h2 class="text-3xl font-bold text-center mb-6 text-white">${category.category}</h2>
                         <div class="flex overflow-x-auto space-x-6 py-4 horizontal-scroll">
                             ${booksHtml}
                         </div>
@@ -370,4 +370,7 @@
     </script>
 </body>
 </html>
+
+
+
 
